@@ -9,55 +9,60 @@ import (
 
 const TimeFormat = "20060102"
 
-func isLeapYear(year int) bool {
-	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+// Функция для проверки, если дата больше now
+func afterNow(date, now time.Time) bool {
+	return date.After(now)
 }
 
-func NextDate(dstart time.Time, repeat string, nowStr string) (string, error) {
-	// Парсим now
-	_, err := time.Parse(TimeFormat, nowStr)
+// Функция для вычисления следующей даты
+func NextDate(now time.Time, dstart string, repeat string) (string, error) {
+	// Преобразуем dstart в time.Time
+	date, err := time.Parse(TimeFormat, dstart)
 	if err != nil {
-		return "", fmt.Errorf("ошибка парсинга now: %w", err)
+		return "", fmt.Errorf("неверный формат даты: %v", err)
 	}
 
-	// Если repeat пустой, просто возвращаем dstart
-	if len(repeat) == 0 {
-		return dstart.Format(TimeFormat), nil
-	}
-
+	// Разбиваем repeat на составляющие
 	parts := strings.Split(repeat, " ")
-	rule := parts[0]
+	if len(parts) == 0 {
+		return "", fmt.Errorf("неправильный формат repeat: %v", repeat)
+	}
 
-	switch rule {
-	case "y":
-		// Добавляем год
-		dstart = dstart.AddDate(1, 0, 0)
-		// Проверяем на високосный год
-		if dstart.Month() == 2 && dstart.Day() == 29 && !isLeapYear(dstart.Year()) {
-			dstart = time.Date(dstart.Year(), 3, 1, 0, 0, 0, 0, dstart.Location())
+	switch parts[0] {
+	case "y": // если правило - ежегодно
+		// Добавляем 1 год
+		date = date.AddDate(1, 0, 0)
+		// Если дата всё ещё меньше current, добавляем ещё 1 год
+		for !afterNow(date, now) {
+			date = date.AddDate(1, 0, 0)
 		}
-		return dstart.Format(TimeFormat), nil
+		return date.Format(TimeFormat), nil
 
-	case "d":
-		// Добавляем дни
+	case "d": // если правило - дни
 		if len(parts) < 2 {
-			return "", fmt.Errorf("нужен аргумент после d")
+			return "", fmt.Errorf("не указан интервал для d")
 		}
-		num, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return "", fmt.Errorf("ошибка преобразования в число: %w", err)
-		}
-		if num <= 0 || num > 400 {
-			return "", fmt.Errorf("некорректное количество дней")
-		}
-		dstart = dstart.AddDate(0, 0, num)
-		return dstart.Format(TimeFormat), nil
 
-	case "m", "w":
-		// Заглушка для неверных типов повторений
-		return "", fmt.Errorf("некорректный запрос")
+		// Парсим интервал в днях
+		days, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return "", fmt.Errorf("неверный формат интервала дней: %v", parts[1])
+		}
+		// Проверка на допустимый диапазон
+		if days < 1 || days > 400 {
+			return "", fmt.Errorf("число дней должно быть от 1 до 400")
+		}
+
+		// Добавляем дни, пока дата не станет больше now
+		for {
+			date = date.AddDate(0, 0, days)
+			if afterNow(date, now) {
+				break
+			}
+		}
+		return date.Format(TimeFormat), nil
 
 	default:
-		return "", fmt.Errorf("неизвестное правило: %s", rule)
+		return "", fmt.Errorf("неподдерживаемый формат повторения: %s", repeat)
 	}
 }
