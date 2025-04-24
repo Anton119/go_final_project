@@ -6,4 +6,6 @@ import "net/http"
 func InitAPI() {
 	http.HandleFunc("/api/nextdate", nextDayHandler) // Обработчик для вычисления следующей даты
 	http.HandleFunc("/api/task", taskHandler)        // Обработчик для работы с задачами
+	http.HandleFunc("/api/tasks", tasksHandler)
+
 }
