@@ -30,9 +30,40 @@ func AddTask(task *Task) (int64, error) {
 	return id, nil
 }
 
-func Tasks(limit int) ([]*Task, error) {
-	query := `SELECT id, date, title, comment, repeat FROM scheduler ORDER BY date LIMIT ?`
-	rows, err := db.Query(query, limit)
+// Функция для поиска задач с поддержкой поиска по заголовку, комментарию и дате
+func Tasks(limit int, search string, dateSearch string) ([]*Task, error) {
+	// Базовый запрос
+	query := `SELECT id, date, title, comment, repeat FROM scheduler`
+
+	// Если есть параметр search, добавляем условие LIKE
+	if search != "" {
+		query += ` WHERE title LIKE ? OR comment LIKE ?`
+	}
+
+	// Если есть параметр dateSearch (поиск по дате), добавляем условие для даты
+	if dateSearch != "" {
+		if search != "" {
+			query += ` AND date = ?`
+		} else {
+			query += ` WHERE date = ?`
+		}
+	}
+
+	// Добавляем сортировку по дате
+	query += ` ORDER BY date LIMIT ?`
+
+	// Подготовка параметров для запроса
+	var params []interface{}
+	if search != "" {
+		params = append(params, "%"+search+"%", "%"+search+"%")
+	}
+	if dateSearch != "" {
+		params = append(params, dateSearch)
+	}
+	params = append(params, limit)
+
+	// Выполнение запроса
+	rows, err := db.Query(query, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +79,7 @@ func Tasks(limit int) ([]*Task, error) {
 		tasks = append(tasks, &task)
 	}
 
-	// Если задач нет, вернётся пустой список
+	// Если задач нет, возвращаем пустой слайс
 	if tasks == nil {
 		tasks = []*Task{}
 	}
