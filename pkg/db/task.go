@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 // глобальная переменная = хранит подключение к бд
@@ -28,6 +29,42 @@ func AddTask(task *Task) (int64, error) {
 	}
 	id, _ := res.LastInsertId()
 	return id, nil
+}
+
+func UpdateTask(task *Task) error {
+	query := `UPDATE scheduler SET date = ?, title = ?, comment = ?, repeat = ? WHERE id = ?`
+	res, err := db.Exec(query, task.Date, task.Title, task.Comment, task.Repeat, task.ID)
+	if err != nil {
+		return err
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return fmt.Errorf("Задача не найдена")
+	}
+	return nil
+}
+
+func GetTask(id string) (*Task, error) {
+	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`
+
+	var task Task
+
+	err := db.QueryRow(query, id).Scan(&task.ID, &task.Date, &task.Title, &task.Comment, &task.Repeat)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Если задача не найдена, возвращаем ошибку
+			return nil, fmt.Errorf("task not found")
+		}
+		// Если ошибка не связана с отсутствием строки, возвращаем ошибку
+		return nil, err
+	}
+
+	return &task, nil
 }
 
 // Функция для поиска задач с поддержкой поиска по заголовку, комментарию и дате
