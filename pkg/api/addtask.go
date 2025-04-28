@@ -114,7 +114,7 @@ func addTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ответ с id задачи
-	writeJson(w, map[string]interface{}{"id": id}, http.StatusOK)
+	writeJson(w, map[string]int64{"id": id}, http.StatusOK)
 }
 
 // утилита для json ответов
@@ -122,10 +122,13 @@ func writeJson(w http.ResponseWriter, data any, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(statusCode)
 
+	// Логирование отправляемого ответа
+	log.Printf("Response: %+v", data)
+
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		log.Printf("ошибка сериализации JSON: %v", err)
-		http.Error(w, fmt.Sprintf("ошибка сериализации ответа"), http.StatusInternalServerError)
+		log.Printf("Ошибка сериализации JSON: %v", err)
+		http.Error(w, "Ошибка сериализации ответа", http.StatusInternalServerError)
 	}
 }
 
@@ -134,5 +137,5 @@ func afterNow(now, date time.Time) bool {
 	truncatedDate := date.In(time.UTC).Truncate(24 * time.Hour) // Переводим в UTC и обрезаем время
 
 	log.Printf("Сравнение дат: now = %v, date = %v", truncatedNow, truncatedDate)
-	return truncatedDate.After(truncatedNow)
+	return truncatedDate.After(truncatedNow) || truncatedDate.Equal(truncatedNow)
 }

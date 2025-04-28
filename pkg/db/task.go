@@ -3,10 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 )
-
-// глобальная переменная = хранит подключение к бд
-var db *sql.DB
 
 // подключение к бд для инициализации в main.go
 func Init(database *sql.DB) {
@@ -14,7 +12,7 @@ func Init(database *sql.DB) {
 }
 
 type Task struct {
-	ID      int64  `json:"id"`
+	ID      string `json:"id"`
 	Date    string `json:"date"`
 	Title   string `json:"title"`
 	Comment string `json:"comment"`
@@ -44,12 +42,13 @@ func UpdateTask(task *Task) error {
 	}
 
 	if count == 0 {
-		return fmt.Errorf("Задача не найдена")
+		return fmt.Errorf("задача не найдена")
 	}
 	return nil
 }
 
 func GetTask(id string) (*Task, error) {
+	log.Println("GetTask", id)
 	query := `SELECT id, date, title, comment, repeat FROM scheduler WHERE id = ?`
 
 	var task Task

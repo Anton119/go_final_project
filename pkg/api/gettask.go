@@ -17,6 +17,7 @@ func getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	task, err := db.GetTask(id)
 	if err != nil {
 		writeJson(w, map[string]string{"error": "Задача не найдена"}, http.StatusNotFound)
+		return
 	}
 
 	writeJson(w, task, http.StatusOK)
