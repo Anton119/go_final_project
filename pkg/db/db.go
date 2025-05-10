@@ -8,6 +8,9 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// глобальная переменная = хранит подключение к бд
+var db *sql.DB
+
 const schema = `
 CREATE TABLE IF NOT EXISTS scheduler (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
